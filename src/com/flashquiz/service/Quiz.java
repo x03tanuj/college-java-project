@@ -1,54 +1,67 @@
 package com.flashquiz.service;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Scanner;
+
 import com.flashquiz.model.Card;
 import com.flashquiz.model.Deck;
 import com.flashquiz.util.StringUtil;
 import com.flashquiz.exception.InvalidDeckException;
 import com.flashquiz.exception.InvalidInputException;
 
-// Unit 4, 5, 6: Quiz demonstrating try/catch, throw, throws, finally, and custom exceptions
+// Unit 4, 5, 6, 8: Quiz integrating multithreading, timer thread, priority, and synchronized shared state
 public class Quiz implements Scorable {
 
     private Deck deck;
     private int totalQuestions;
-    private int score;
-    private int totalPointsEarned;
-    private int totalPossiblePoints;
+    private int timeLimitSeconds; // 0 = untimed, >0 = per-question timer
+    private QuizTracker tracker; // Unit 8: Thread-safe shared score counter
     private double percentage;
     private long durationSeconds;
     private int hintsRequested;
 
     public Quiz(Deck deck) {
+        this(deck, 0); // Default untimed
+    }
+
+    // Unit 8: Overloaded constructor accepting per-question countdown limit
+    public Quiz(Deck deck, int timeLimitSeconds) {
         if (deck == null) {
-            // Unit 6: throw unchecked exception
             throw new InvalidInputException("Quiz constructor requires a non-null Deck object.");
         }
         this.deck = deck;
         this.totalQuestions = deck.getCardCount();
-        this.score = 0;
-        this.totalPointsEarned = 0;
-        this.totalPossiblePoints = 0;
+        this.timeLimitSeconds = Math.max(0, timeLimitSeconds);
+        this.tracker = new QuizTracker();
         this.percentage = 0.0;
         this.durationSeconds = 0;
         this.hintsRequested = 0;
     }
 
-    // Unit 6: Method declaring checked exception using 'throws'
+    // Scanner adapter for backwards compatibility
     public void runQuiz(Scanner scanner) throws InvalidDeckException {
-        // Unit 6: Validating deck state; may throw checked InvalidDeckException
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        runQuiz(reader);
+    }
+
+    // Unit 8: Multithreaded Quiz runner with background QuestionTimer Thread
+    public void runQuiz(BufferedReader reader) throws InvalidDeckException {
         deck.validateDeck();
+        tracker.reset();
 
         System.out.println(StringUtil.formatBannerWithDecoration("STARTING QUIZ: " + deck.getName()));
-        System.out.println("Total Cards in Deck: " + deck.getCardCount());
-        System.out.println("Tip: Enter ':hint' at any prompt to reveal letter hints!");
+        System.out.println("Total Cards in Deck : " + deck.getCardCount());
+        if (timeLimitSeconds > 0) {
+            System.out.println("Timer Mode Enabled  : " + timeLimitSeconds + " seconds per card (Question skips on expiry)");
+        } else {
+            System.out.println("Timer Mode          : Untimed (Take your time)");
+        }
+        System.out.println("Available Commands  : ':hint' for clue, ':skip' to pass card");
 
-        int correctCount = 0;
-        int pointsEarned = 0;
-        int possiblePoints = 0;
         long startTime = System.currentTimeMillis();
 
-        // Unit 6: try-finally block to ensure duration calculation even if interrupted
         try {
             for (int i = 0; i < deck.getCardCount(); i++) {
                 Card card = deck.getCardAt(i);
@@ -56,54 +69,109 @@ public class Quiz implements Scorable {
                     continue;
                 }
 
-                possiblePoints += card.getPoints();
-
                 System.out.println();
                 card.display();
 
-                String answer = "";
-                boolean answered = false;
+                String answer = null;
+                boolean cardHandled = false;
 
-                while (!answered) {
-                    System.out.print("Your Answer (or ':hint'): ");
-                    try {
-                        answer = scanner.nextLine();
-                        if (answer == null) {
-                            throw new InvalidInputException("Input stream was closed or returned null.");
+                while (!cardHandled) {
+                    if (timeLimitSeconds > 0) {
+                        // Unit 8: Instantiating Runnable for countdown timer
+                        QuestionTimer timerRunnable = new QuestionTimer(timeLimitSeconds);
+                        // Unit 8: Instantiating Thread with Runnable
+                        Thread timerThread = new Thread(timerRunnable, "QuestionTimerThread-" + (i + 1));
+
+                        // Unit 8: Setting thread priority
+                        // Explanation: Set to Thread.MIN_PRIORITY (1) so that the background countdown
+                        // timer thread yields CPU execution preference to the main user-input thread,
+                        // ensuring smooth, non-lagging terminal typing and response capture.
+                        timerThread.setPriority(Thread.MIN_PRIORITY);
+                        timerThread.start();
+
+                        System.out.print("Your Answer [" + timeLimitSeconds + "s limit]: ");
+
+                        // Polling with sleep to allow timer thread execution while waiting for user input
+                        while (!timerRunnable.isExpired()) {
+                            try {
+                                if (reader.ready()) {
+                                    answer = reader.readLine();
+                                    timerRunnable.cancel();
+                                    timerThread.interrupt(); // Interrupt sleeper
+                                    if (answer == null) {
+                                        System.out.println("\n[EOF Detected] Stream closed.");
+                                        return;
+                                    }
+                                    break;
+                                }
+                                Thread.sleep(50); // Small sleep to prevent busy-waiting
+                            } catch (InterruptedException ie) {
+                                break;
+                            } catch (IOException ioe) {
+                                answer = "";
+                                break;
+                            }
                         }
 
-                        if (answer.trim().equalsIgnoreCase(":hint") || answer.trim().equalsIgnoreCase("hint")) {
-                            System.out.println(">> " + card.getHint());
-                            hintsRequested++;
-                        } else {
-                            answered = true;
+                        // Unit 8: Handling timeout - question counts as skipped
+                        if (timerRunnable.isExpired()) {
+                            System.out.println("\n[TIME EXPIRED!] Time limit of " + timeLimitSeconds + "s exceeded! Question skipped.");
+                            // Unit 8: Shared score counter updated inside synchronized block
+                            tracker.recordSkipped(card.getPoints());
+                            cardHandled = true;
+                            continue;
                         }
-                    } catch (InvalidInputException e) {
-                        System.out.println("[Warning] " + e.getMessage() + ". Please re-enter answer.");
+                    } else {
+                        // Untimed input mode
+                        System.out.print("Your Answer: ");
+                        try {
+                            answer = reader.readLine();
+                            if (answer == null) {
+                                System.out.println("\n[EOF Detected] Stream closed.");
+                                return;
+                            }
+                        } catch (IOException e) {
+                            answer = "";
+                        }
                     }
-                }
 
-                boolean correct = card.checkAnswer(answer);
-                if (correct) {
-                    System.out.println(">> Correct! (+" + card.getPoints() + " points)");
-                    correctCount++;
-                    pointsEarned += card.getPoints();
-                } else {
-                    System.out.println(">> Incorrect! Correct Answer: " + card.getAnswer());
+                    if (answer == null) {
+                        answer = "";
+                    }
+
+                    String clean = answer.trim();
+
+                    // Check commands
+                    if (clean.equalsIgnoreCase(":hint") || clean.equalsIgnoreCase("hint")) {
+                        System.out.println(">> " + card.getHint());
+                        hintsRequested++;
+                        // Loop continues so user can submit an actual answer
+                    } else if (clean.equalsIgnoreCase(":skip") || clean.equalsIgnoreCase("skip")) {
+                        System.out.println(">> Skipped by user.");
+                        // Unit 8: Shared state update via synchronized block
+                        tracker.recordSkipped(card.getPoints());
+                        cardHandled = true;
+                    } else {
+                        // Grade user answer
+                        boolean correct = card.checkAnswer(clean);
+                        // Unit 8: Shared score counter updated inside synchronized block
+                        tracker.recordAnswer(correct, card.getPoints());
+
+                        if (correct) {
+                            System.out.println(">> Correct! (+" + card.getPoints() + " points)");
+                        } else {
+                            System.out.println(">> Incorrect! Correct Answer: " + card.getAnswer());
+                        }
+                        cardHandled = true;
+                    }
                 }
             }
         } finally {
-            // Unit 6: finally block guarantees execution
             long endTime = System.currentTimeMillis();
             this.durationSeconds = (endTime - startTime) / 1000;
         }
 
-        this.score = correctCount;
-        this.totalPointsEarned = pointsEarned;
-        this.totalPossiblePoints = possiblePoints;
-        this.totalQuestions = deck.getCardCount();
-        this.percentage = calculatePercentage(pointsEarned, possiblePoints);
-
+        this.percentage = calculatePercentage(tracker.getTotalPointsEarned(), tracker.getTotalPossiblePoints());
         printResults();
     }
 
@@ -133,6 +201,7 @@ public class Quiz implements Scorable {
         return pct >= Scorable.PASSING_THRESHOLD;
     }
 
+    // Unit 5 & 8: Result report utilizing synchronized tracker values
     private void printResults() {
         StringBuffer report = new StringBuffer();
         report.append("\n============================================\n");
@@ -140,11 +209,15 @@ public class Quiz implements Scorable {
         report.append("============================================\n");
         report.append("Deck Name          : ").append(deck.getName()).append("\n");
         report.append("Total Cards        : ").append(totalQuestions).append("\n");
-        report.append("Cards Correct      : ").append(score).append(" / ").append(totalQuestions).append("\n");
-        report.append("Points Scored      : ").append(totalPointsEarned).append(" / ").append(totalPossiblePoints).append(" pts\n");
+        report.append("Cards Correct      : ").append(tracker.getCorrectCount()).append(" / ").append(totalQuestions).append("\n");
+        report.append("Cards Skipped      : ").append(tracker.getSkippedCount()).append("\n");
+        report.append("Cards Incorrect    : ").append(tracker.getIncorrectCount()).append("\n");
+        report.append("Points Scored      : ").append(tracker.getTotalPointsEarned()).append(" / ")
+                .append(tracker.getTotalPossiblePoints()).append(" pts\n");
         report.append("Accuracy Score     : ").append(String.format("%.2f", percentage)).append("%\n");
         report.append("Academic Rating    : ").append(evaluateGrade(percentage)).append("\n");
         report.append("Pass Status        : ").append(isPassing(percentage) ? "PASSED" : "FAILED").append("\n");
+        report.append("Timer Mode         : ").append(timeLimitSeconds > 0 ? (timeLimitSeconds + "s limit") : "Untimed").append("\n");
         report.append("Hints Consulted    : ").append(hintsRequested).append("\n");
         report.append("Completion Time    : ").append(durationSeconds).append(" second(s)\n");
 
@@ -170,15 +243,15 @@ public class Quiz implements Scorable {
     }
 
     public int getScore() {
-        return score;
+        return tracker.getCorrectCount();
     }
 
     public int getTotalPointsEarned() {
-        return totalPointsEarned;
+        return tracker.getTotalPointsEarned();
     }
 
     public int getTotalPossiblePoints() {
-        return totalPossiblePoints;
+        return tracker.getTotalPossiblePoints();
     }
 
     public int getTotalQuestions() {
@@ -191,5 +264,9 @@ public class Quiz implements Scorable {
 
     public int getHintsRequested() {
         return hintsRequested;
+    }
+
+    public QuizTracker getTracker() {
+        return tracker;
     }
 }

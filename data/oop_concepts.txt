@@ -1,0 +1,18 @@
+# Flashcard Deck: OOP Concepts (Unit 2 & 3)
+# Format:
+# TEXT|question|answer|topic|points
+# MCQ|question|correctOptionLetter|optionsSeparatedBySemicolon|topic|points
+# TF|question|true/false|topic|points
+
+TEXT|What keyword refers to the current invoking object instance?|this|OOP Core|10
+TEXT|Which keyword invokes the superclass constructor from a subclass?|super|Inheritance|10
+TEXT|Which access modifier makes a member accessible only within its own class?|private|Encapsulation|10
+TEXT|What keyword prevents a class from being inherited or subclassed?|final|Inheritance|10
+MCQ|What is the return type of a constructor in Java?|D|void;int;Object;No return type|Constructors|15
+MCQ|Which OOP principle allows a base reference to execute subclass-specific methods at runtime?|B|Encapsulation;Polymorphism;Abstraction;Inheritance|Polymorphism|15
+MCQ|Which keyword is used to declare a class that cannot be instantiated directly?|A|abstract;interface;static;final|Abstract Classes|15
+MCQ|When two methods in the same class have the same name but different parameter lists, this is called:|C|Overriding;Hiding;Overloading;Shadowing|Polymorphism|15
+TF|An abstract class can declare concrete instance methods with method bodies.|true|Abstract Classes|10
+TF|Constructors can be declared as 'final' in Java.|false|Constructors|10
+TF|A subclass constructor automatically calls super() if no explicit super(...) is provided.|true|Inheritance|10
+TF|Java supports multiple inheritance of classes using the extends keyword.|false|Inheritance|10

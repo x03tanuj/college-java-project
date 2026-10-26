@@ -1,10 +1,12 @@
 package com.flashquiz.model;
 
-// Unit 3: Inheritance, super keyword, method overriding, method overloading
+import com.flashquiz.util.StringUtil;
+
+// Unit 3 & Unit 5: MultipleChoiceCard with StringBuffer option formatting and charAt parsing
 public class MultipleChoiceCard extends Card {
 
     private String[] options;
-    private char correctOption; // e.g. 'A', 'B', 'C', 'D'
+    private char correctOption; // 'A', 'B', 'C', 'D'
 
     public MultipleChoiceCard() {
         super();
@@ -12,46 +14,47 @@ public class MultipleChoiceCard extends Card {
         this.correctOption = 'A';
     }
 
-    // Unit 3: Calling super(...) constructor with arguments
     public MultipleChoiceCard(int id, String question, String[] options, char correctOption, String topic, int points) {
         super(id, question, topic, points);
         this.options = options;
         this.correctOption = Character.toUpperCase(correctOption);
     }
 
-    // Unit 3: Method overriding of abstract method display()
+    // Unit 5: Using StringBuffer to format multi-line options display
     @Override
     public void display() {
-        System.out.println(getFormattedHeader());
-        System.out.println("Question: " + question);
+        StringBuffer sb = new StringBuffer();
+        sb.append(getFormattedHeader()).append("\n");
+        sb.append("Question: ").append(question).append("\n");
         char label = 'A';
         for (int i = 0; i < options.length; i++) {
-            System.out.println("  [" + label + "] " + options[i]);
+            sb.append("  [").append(label).append("] ").append(options[i]).append("\n");
             label++;
         }
-        System.out.println("Type    : Multiple Choice (Enter option letter A, B, C, or D)");
+        sb.append("Type    : Multiple Choice (Enter A, B, C, D or ':hint' for a hint)");
+        System.out.println(sb.toString());
     }
 
-    // Unit 3: Method overriding of checkAnswer(String)
+    // Unit 5: String trimming, charAt extraction, and compareTo validation
     @Override
     public boolean checkAnswer(String userAnswer) {
         if (userAnswer == null || userAnswer.trim().length() == 0) {
             return false;
         }
         String clean = userAnswer.trim();
-        // Match option letter
+        // Unit 5: Character extraction using charAt(0)
         if (clean.length() == 1) {
-            return checkAnswer(clean.charAt(0)); // Delegates to overloaded checkAnswer(char)
+            return checkAnswer(clean.charAt(0));
         }
-        // Also allow matching the full text of the correct option
+
+        // Check if user entered full option text
         int correctIndex = Character.toUpperCase(correctOption) - 'A';
         if (correctIndex >= 0 && correctIndex < options.length) {
-            return clean.equalsIgnoreCase(options[correctIndex].trim());
+            return StringUtil.compareAnswers(options[correctIndex], clean);
         }
         return false;
     }
 
-    // Unit 3: Method overloading - checkAnswer specifically with primitive char
     @Override
     public boolean checkAnswer(char optionChar) {
         return Character.toUpperCase(optionChar) == Character.toUpperCase(this.correctOption);

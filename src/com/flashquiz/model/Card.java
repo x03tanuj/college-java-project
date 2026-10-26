@@ -1,20 +1,19 @@
 package com.flashquiz.model;
 
-// Unit 3: Inheritance, access control (protected), final method, method overloading, abstract classes
+import com.flashquiz.util.StringUtil;
+
+// Unit 3 & Unit 5: Abstract Card class with StringBuffer-based header formatting and String hint extraction
 public abstract class Card {
 
-    // Protected fields accessible by subclasses (Unit 3: access control)
     protected int id;
     protected String question;
     protected String topic;
     protected int points;
 
-    // Unit 3: Base constructor
     public Card() {
         this(0, "Default Question", "General", 10);
     }
 
-    // Unit 3: Parameterized constructor invoked via super(...)
     public Card(int id, String question, String topic, int points) {
         this.id = id;
         this.question = question;
@@ -22,23 +21,30 @@ public abstract class Card {
         this.points = points;
     }
 
-    // Unit 3: Abstract methods that MUST be overridden by concrete subclasses
     public abstract boolean checkAnswer(String userAnswer);
     public abstract void display();
     public abstract String getAnswer();
     public abstract String getCardType();
 
-    // Unit 3: Method Overloading - overloading checkAnswer with char parameter
     public boolean checkAnswer(char optionChar) {
         return checkAnswer(String.valueOf(optionChar));
     }
 
-    // Unit 3: Final method - cannot be overridden by any subclass
+    // Unit 5: Using StringBuffer to build formatted header (append)
     public final String getFormattedHeader() {
-        return "=== [Card #" + id + " | " + topic + " | " + getCardType() + " | " + points + " pts] ===";
+        StringBuffer sb = new StringBuffer();
+        sb.append("=== [Card #").append(id);
+        sb.append(" | ").append(topic);
+        sb.append(" | ").append(getCardType());
+        sb.append(" | ").append(points).append(" pts] ===");
+        return sb.toString();
     }
 
-    // Unit 3: Final method for immutable point retrieval
+    // Unit 5: Hint feature using character extraction via StringUtil
+    public String getHint() {
+        return StringUtil.buildHint(getAnswer());
+    }
+
     public final int getPoints() {
         return points;
     }

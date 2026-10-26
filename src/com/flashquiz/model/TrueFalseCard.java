@@ -1,6 +1,6 @@
 package com.flashquiz.model;
 
-// Unit 3: Inheritance, super constructor call, method overriding
+// Unit 3 & Unit 5: TrueFalseCard with StringBuffer display and String case comparisons
 public class TrueFalseCard extends Card {
 
     private boolean correctAnswer;
@@ -10,30 +10,32 @@ public class TrueFalseCard extends Card {
         this.correctAnswer = true;
     }
 
-    // Unit 3: Calling super(...) constructor
     public TrueFalseCard(int id, String question, boolean correctAnswer, String topic, int points) {
         super(id, question, topic, points);
         this.correctAnswer = correctAnswer;
     }
 
-    // Unit 3: Method overriding of abstract method display()
+    // Unit 5: StringBuffer display formatting
     @Override
     public void display() {
-        System.out.println(getFormattedHeader());
-        System.out.println("Question: " + question);
-        System.out.println("Type    : True / False (Enter 'true' or 'false', or 'T'/'F')");
+        StringBuffer sb = new StringBuffer();
+        sb.append(getFormattedHeader()).append("\n");
+        sb.append("Question: ").append(question).append("\n");
+        sb.append("Type    : True / False (Enter 'true'/'false', 'T'/'F', or ':hint' for hint)");
+        System.out.println(sb.toString());
     }
 
-    // Unit 3: Method overriding of abstract method checkAnswer(String)
+    // Unit 5: String trimming, equalsIgnoreCase, and comparison
     @Override
     public boolean checkAnswer(String userAnswer) {
         if (userAnswer == null) {
             return false;
         }
-        String clean = userAnswer.trim().toLowerCase();
-        if (clean.equals("t") || clean.equals("true")) {
+        String clean = userAnswer.trim();
+        // Unit 5: equalsIgnoreCase comparison
+        if (clean.equalsIgnoreCase("t") || clean.equalsIgnoreCase("true")) {
             return this.correctAnswer == true;
-        } else if (clean.equals("f") || clean.equals("false")) {
+        } else if (clean.equalsIgnoreCase("f") || clean.equalsIgnoreCase("false")) {
             return this.correctAnswer == false;
         }
         return false;

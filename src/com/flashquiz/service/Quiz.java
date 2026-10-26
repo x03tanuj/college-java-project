@@ -3,8 +3,9 @@ package com.flashquiz.service;
 import java.util.Scanner;
 import com.flashquiz.model.Card;
 import com.flashquiz.model.Deck;
+import com.flashquiz.util.StringUtil;
 
-// Unit 4: Packages and Interfaces - Quiz implements Scorable interface
+// Unit 4 & Unit 5: Scorable interface implementation with StringBuffer reporting and String hint interactions
 public class Quiz implements Scorable {
 
     private Deck deck;
@@ -14,6 +15,7 @@ public class Quiz implements Scorable {
     private int totalPossiblePoints;
     private double percentage;
     private long durationSeconds;
+    private int hintsRequested;
 
     public Quiz(Deck deck) {
         this.deck = deck;
@@ -23,6 +25,7 @@ public class Quiz implements Scorable {
         this.totalPossiblePoints = 0;
         this.percentage = 0.0;
         this.durationSeconds = 0;
+        this.hintsRequested = 0;
     }
 
     public void runQuiz(Scanner scanner) {
@@ -31,10 +34,10 @@ public class Quiz implements Scorable {
             return;
         }
 
-        System.out.println("\n==========================================");
-        System.out.println("  STARTING QUIZ: " + deck.getName());
-        System.out.println("  Total Cards: " + deck.getCardCount());
-        System.out.println("==========================================");
+        // Unit 5: StringBuffer decorated banner via StringUtil
+        System.out.println(StringUtil.formatBannerWithDecoration("STARTING QUIZ: " + deck.getName()));
+        System.out.println("Total Cards in Deck: " + deck.getCardCount());
+        System.out.println("Tip: Enter ':hint' at any prompt to reveal letter hints!");
 
         int correctCount = 0;
         int pointsEarned = 0;
@@ -52,8 +55,22 @@ public class Quiz implements Scorable {
             System.out.println();
             card.display();
 
-            System.out.print("Your Answer: ");
-            String answer = scanner.nextLine();
+            String answer = "";
+            boolean answered = false;
+
+            // Unit 5: Hint feature loop using String.equalsIgnoreCase and char extraction
+            while (!answered) {
+                System.out.print("Your Answer (or ':hint'): ");
+                answer = scanner.nextLine();
+
+                if (answer != null && (answer.trim().equalsIgnoreCase(":hint") || answer.trim().equalsIgnoreCase("hint"))) {
+                    // Reveal hint extracted via character extraction
+                    System.out.println(">> " + card.getHint());
+                    hintsRequested++;
+                } else {
+                    answered = true;
+                }
+            }
 
             boolean correct = card.checkAnswer(answer);
             if (correct) {
@@ -71,13 +88,11 @@ public class Quiz implements Scorable {
         this.totalPointsEarned = pointsEarned;
         this.totalPossiblePoints = possiblePoints;
         this.totalQuestions = deck.getCardCount();
-        // Unit 4: Using implemented interface method
         this.percentage = calculatePercentage(pointsEarned, possiblePoints);
 
         printResults();
     }
 
-    // Unit 4: Implementing Scorable.calculatePercentage
     @Override
     public double calculatePercentage(int pointsEarned, int totalPossible) {
         if (totalPossible <= 0) {
@@ -86,7 +101,6 @@ public class Quiz implements Scorable {
         return ((double) pointsEarned / (double) totalPossible) * 100.0;
     }
 
-    // Unit 4: Implementing Scorable.evaluateGrade using interface constants
     @Override
     public String evaluateGrade(double pct) {
         if (pct >= Scorable.DISTINCTION_THRESHOLD) {
@@ -100,22 +114,46 @@ public class Quiz implements Scorable {
         }
     }
 
-    // Unit 4: Implementing Scorable.isPassing using interface constants
     @Override
     public boolean isPassing(double pct) {
         return pct >= Scorable.PASSING_THRESHOLD;
     }
 
+    // Unit 5: Building comprehensive result report using StringBuffer (append, insert, reverse)
     private void printResults() {
-        System.out.println("\n=========== QUIZ RESULTS ===========");
-        System.out.println("Deck Name    : " + deck.getName());
-        System.out.println("Questions    : " + score + " / " + totalQuestions + " correct");
-        System.out.println("Points       : " + totalPointsEarned + " / " + totalPossiblePoints + " pts");
-        System.out.printf("Percentage   : %.2f%%\n", percentage);
-        System.out.println("Evaluation   : " + evaluateGrade(percentage));
-        System.out.println("Passed       : " + (isPassing(percentage) ? "YES" : "NO"));
-        System.out.println("Time Taken   : " + durationSeconds + " second(s)");
-        System.out.println("=====================================");
+        StringBuffer report = new StringBuffer(); // Unit 5: StringBuffer constructor
+
+        // Unit 5: StringBuffer append()
+        report.append("\n============================================\n");
+        report.append("             QUIZ PERFORMANCE REPORT        \n");
+        report.append("============================================\n");
+        report.append("Deck Name          : ").append(deck.getName()).append("\n");
+        report.append("Total Cards        : ").append(totalQuestions).append("\n");
+        report.append("Cards Correct      : ").append(score).append(" / ").append(totalQuestions).append("\n");
+        report.append("Points Scored      : ").append(totalPointsEarned).append(" / ").append(totalPossiblePoints).append(" pts\n");
+        report.append("Accuracy Score     : ").append(String.format("%.2f", percentage)).append("%\n");
+        report.append("Academic Rating    : ").append(evaluateGrade(percentage)).append("\n");
+        report.append("Pass Status        : ").append(isPassing(percentage) ? "PASSED" : "FAILED").append("\n");
+        report.append("Hints Consulted    : ").append(hintsRequested).append("\n");
+        report.append("Completion Time    : ").append(durationSeconds).append(" second(s)\n");
+
+        // Unit 5: StringBuffer reverse() to generate symmetrical decorative divider
+        StringBuffer borderDecor = new StringBuffer("~~~***>>> FlashQuiz Lab <<<***~~~");
+        String normalBorder = borderDecor.toString();
+        String reversedBorder = borderDecor.reverse().toString(); // Unit 5: reverse()
+        report.append("--------------------------------------------\n");
+        report.append("Header Style: ").append(normalBorder).append("\n");
+        report.append("Mirror Style: ").append(reversedBorder).append("\n");
+        report.append("============================================\n");
+
+        // Unit 5: StringBuffer insert() - insert performance badge at top of report body
+        String badge = "[STATUS: " + (isPassing(percentage) ? "QUALIFIED" : "RETAKE") + "] ";
+        int insertPosition = report.indexOf("Deck Name");
+        if (insertPosition != -1) {
+            report.insert(insertPosition, badge); // Unit 5: insert()
+        }
+
+        System.out.println(report.toString());
     }
 
     public Deck getDeck() {
@@ -140,5 +178,9 @@ public class Quiz implements Scorable {
 
     public double getPercentage() {
         return percentage;
+    }
+
+    public int getHintsRequested() {
+        return hintsRequested;
     }
 }

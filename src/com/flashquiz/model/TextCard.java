@@ -1,6 +1,8 @@
 package com.flashquiz.model;
 
-// Unit 3: Inheritance (extends), super(...) constructor call, method overriding
+import com.flashquiz.util.StringUtil;
+
+// Unit 3 & Unit 5: TextCard implementing String comparisons (trim, equalsIgnoreCase, compareTo)
 public class TextCard extends Card {
 
     private String expectedAnswer;
@@ -10,27 +12,28 @@ public class TextCard extends Card {
         this.expectedAnswer = "Default Answer";
     }
 
-    // Unit 3: super(...) constructor call passing parameters to Card base class
     public TextCard(int id, String question, String expectedAnswer, String topic, int points) {
         super(id, question, topic, points);
         this.expectedAnswer = expectedAnswer;
     }
 
-    // Unit 3: Method overriding of abstract method checkAnswer(String)
+    // Unit 5: Answer checking using StringUtil (trim, equalsIgnoreCase, compareTo, contains)
     @Override
     public boolean checkAnswer(String userAnswer) {
         if (userAnswer == null || expectedAnswer == null) {
             return false;
         }
-        return this.expectedAnswer.trim().equalsIgnoreCase(userAnswer.trim());
+        return StringUtil.compareAnswers(expectedAnswer, userAnswer);
     }
 
-    // Unit 3: Method overriding of abstract method display()
+    // Unit 5: Displaying card with StringBuffer
     @Override
     public void display() {
-        System.out.println(getFormattedHeader());
-        System.out.println("Question: " + question);
-        System.out.println("Type    : Direct Text Answer");
+        StringBuffer sb = new StringBuffer();
+        sb.append(getFormattedHeader()).append("\n");
+        sb.append("Question: ").append(question).append("\n");
+        sb.append("Type    : Direct Text Answer (Type ':hint' for a hint)");
+        System.out.println(sb.toString());
     }
 
     @Override

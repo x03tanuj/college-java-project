@@ -1,6 +1,8 @@
 package com.flashquiz;
 
 import java.util.Scanner;
+import com.flashquiz.model.Deck;
+import com.flashquiz.model.Flashcard;
 
 // Unit 1: Bytecode, data types, variables, arrays, operators, decision and control statements
 public class Main {
@@ -28,43 +30,93 @@ public class Main {
         // Unit 1: while control statement
         while (running) {
             System.out.println("\n---------------- MAIN MENU ----------------");
-            System.out.println("1. Start Quick Starter Quiz");
-            System.out.println("2. View Score History (Array Storage)");
-            System.out.println("3. System & Variable Diagnostics");
-            System.out.println("4. Exit");
-            System.out.print("Select an option (1-4): ");
+            System.out.println("1. Start Quick Starter Quiz (Unit 1 Basics)");
+            System.out.println("2. Start OOP Flashcard Quiz (Unit 2 Objects & Decks)");
+            System.out.println("3. View Score History (Array Storage)");
+            System.out.println("4. System & Variable Diagnostics");
+            System.out.println("5. Exit");
+            System.out.print("Select an option (1-5): ");
 
             String input = scanner.nextLine();
-            // Unit 1: if-else statement for input validation
             if (input == null || input.trim().length() == 0) {
-                System.out.println("[Error] Empty input! Please enter a number between 1 and 4.");
+                System.out.println("[Error] Empty input! Please enter a number between 1 and 5.");
                 continue;
             }
 
-            char menuChoice = input.trim().charAt(0); // Unit 1: char primitive type
+            char menuChoice = input.trim().charAt(0);
 
-            // Unit 1: switch control statement
             switch (menuChoice) {
                 case '1':
                     runQuickQuiz(scanner, systemMode, totalPossiblePoints);
                     sessionQuizCount++;
                     break;
                 case '2':
-                    displayScoreHistory();
+                    runOopQuiz(scanner);
+                    sessionQuizCount++;
                     break;
                 case '3':
-                    displayDiagnostics(sessionQuizCount);
+                    displayScoreHistory();
                     break;
                 case '4':
+                    displayDiagnostics(sessionQuizCount);
+                    break;
+                case '5':
                     System.out.println("Thank you for using Flash Card Quiz! Goodbye.");
                     running = false;
                     break;
                 default:
-                    System.out.println("[Error] Invalid choice '" + menuChoice + "'. Enter 1, 2, 3, or 4.");
+                    System.out.println("[Error] Invalid choice '" + menuChoice + "'. Enter 1 to 5.");
                     break;
             }
         }
         scanner.close();
+    }
+
+    // Unit 2: Building Deck object, adding Flashcard objects, and passing Deck to Quiz
+    private static void runOopQuiz(Scanner scanner) {
+        // Unit 2: Creating objects and using overloaded constructors
+        Deck oopDeck = new Deck("Java OOP Core", "Demonstrating classes, objects, and constructors");
+
+        // Flashcard instantiated via different constructors
+        Flashcard c1 = new Flashcard(1, "What is the blueprint from which objects are created?", "class", "OOP");
+        Flashcard c2 = new Flashcard("Which keyword refers to the current class instance?", "this");
+        c2.setId(2);
+        c2.setTopic("OOP");
+        Flashcard c3 = new Flashcard(3, "Can a Java class have multiple constructors? (yes/no)", "yes", "OOP");
+        // Unit 2: Copy constructor demonstration
+        Flashcard c3Copy = new Flashcard(c3);
+        c3Copy.setId(4);
+        c3Copy.setQuestion("Does Java support constructor overloading? (yes/no)");
+
+        // Unit 2: Passing objects as parameters to Deck
+        oopDeck.addCard(c1);
+        oopDeck.addCard(c2);
+        oopDeck.addCard(c3Copy);
+
+        // Unit 2: Passing Deck object to Quiz constructor
+        com.flashquiz.service.Quiz quiz = new com.flashquiz.service.Quiz(oopDeck);
+        quiz.runQuiz(scanner);
+
+        // Record history
+        recordHistory(oopDeck.getName(), quiz.getScore() * 10, quiz.getPercentage());
+    }
+
+    private static void recordHistory(String deckName, int scaledScore, double percentage) {
+        if (historyCount < MAX_HISTORY) {
+            scoreHistory[historyCount] = scaledScore;
+            deckHistory[historyCount] = deckName;
+            percentageHistory[historyCount] = percentage;
+            historyCount++;
+        } else {
+            for (int k = 1; k < MAX_HISTORY; k++) {
+                scoreHistory[k - 1] = scoreHistory[k];
+                deckHistory[k - 1] = deckHistory[k];
+                percentageHistory[k - 1] = percentageHistory[k];
+            }
+            scoreHistory[MAX_HISTORY - 1] = scaledScore;
+            deckHistory[MAX_HISTORY - 1] = deckName;
+            percentageHistory[MAX_HISTORY - 1] = percentage;
+        }
     }
 
     // Unit 1: Method demonstrating operators, arrays, loops, and all primitives
@@ -135,23 +187,8 @@ public class Main {
         System.out.println("Performance Tier   : " + performanceTier);
         System.out.println("==================================");
 
-        // Store result in history array if capacity permits
-        if (historyCount < MAX_HISTORY) {
-            scoreHistory[historyCount] = scaledScore;
-            deckHistory[historyCount] = "Quick Starter (Mode " + mode + ")";
-            percentageHistory[historyCount] = percentage;
-            historyCount++;
-        } else {
-            // Shift array elements if full (Unit 1: array manipulation)
-            for (int k = 1; k < MAX_HISTORY; k++) {
-                scoreHistory[k - 1] = scoreHistory[k];
-                deckHistory[k - 1] = deckHistory[k];
-                percentageHistory[k - 1] = percentageHistory[k];
-            }
-            scoreHistory[MAX_HISTORY - 1] = scaledScore;
-            deckHistory[MAX_HISTORY - 1] = "Quick Starter (Mode " + mode + ")";
-            percentageHistory[MAX_HISTORY - 1] = percentage;
-        }
+        // Store result in history array using helper
+        recordHistory("Quick Starter (Mode " + mode + ")", scaledScore, percentage);
     }
 
     // Unit 1: Arrays iteration and output formatting

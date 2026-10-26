@@ -1,15 +1,15 @@
 package com.flashquiz.model;
 
 import java.util.Random;
+import com.flashquiz.io.Persistable; // Unit 4: Importing interface from com.flashquiz.io package
 
-// Unit 3: Polymorphism - Deck manages polymorphic Card references (Card[])
-public class Deck {
+// Unit 4: Class implementing an interface from another package (com.flashquiz.io.Persistable)
+public class Deck implements Persistable {
 
     private static final int DEFAULT_CAPACITY = 20;
 
     private String name;
     private String description;
-    // Unit 3: Polymorphic array storing any subclass of Card
     private Card[] cards;
     private int cardCount;
     private Random random;
@@ -26,7 +26,6 @@ public class Deck {
         this.random = new Random();
     }
 
-    // Unit 3: Polymorphic method argument - accepts TextCard, MultipleChoiceCard, TrueFalseCard
     public boolean addCard(Card card) {
         if (card == null) {
             return false;
@@ -36,6 +35,8 @@ public class Deck {
         }
         cards[cardCount] = card;
         cardCount++;
+        // Unit 4: Calling package-private method from DeckValidator (same package access)
+        DeckValidator.validateCardCount(cardCount, 1000);
         return true;
     }
 
@@ -51,7 +52,6 @@ public class Deck {
         return false;
     }
 
-    // Unit 3: Returning polymorphic base class object Card
     public Card getCardAt(int index) {
         if (index < 0 || index >= cardCount) {
             return null;
@@ -59,7 +59,6 @@ public class Deck {
         return cards[index];
     }
 
-    // Unit 3: Returning polymorphic base class object Card
     public Card getRandomCard() {
         if (cardCount == 0) {
             return null;
@@ -98,5 +97,23 @@ public class Deck {
 
     public void printDeckSummary() {
         System.out.println("Deck: " + name + " (" + cardCount + " cards) - " + description);
+    }
+
+    // Unit 4: Implementation of Persistable interface methods
+    @Override
+    public String toDataRecord() {
+        return "DECK|" + name + "|" + description + "|" + cardCount;
+    }
+
+    @Override
+    public void save(String destinationPath) throws Exception {
+        // Will be connected to File I/O in Unit 7
+        System.out.println("[Persistable] Deck ready for serialization to: " + destinationPath);
+    }
+
+    @Override
+    public void load(String sourcePath) throws Exception {
+        // Will be connected to File I/O in Unit 7
+        System.out.println("[Persistable] Deck ready for loading from: " + sourcePath);
     }
 }

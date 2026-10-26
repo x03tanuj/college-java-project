@@ -4,8 +4,8 @@ import java.util.Scanner;
 import com.flashquiz.model.Card;
 import com.flashquiz.model.Deck;
 
-// Unit 3: Dynamic Method Dispatch (Polymorphism) and overriding execution
-public class Quiz {
+// Unit 4: Packages and Interfaces - Quiz implements Scorable interface
+public class Quiz implements Scorable {
 
     private Deck deck;
     private int totalQuestions;
@@ -25,7 +25,6 @@ public class Quiz {
         this.durationSeconds = 0;
     }
 
-    // Unit 3: Dynamic method dispatch in action
     public void runQuiz(Scanner scanner) {
         if (deck == null || deck.getCardCount() == 0) {
             System.out.println("[Error] Cannot start quiz: The deck is empty or not loaded.");
@@ -43,22 +42,19 @@ public class Quiz {
         long startTime = System.currentTimeMillis();
 
         for (int i = 0; i < deck.getCardCount(); i++) {
-            // Unit 3: Base class reference (Card) pointing to subclass instance
             Card card = deck.getCardAt(i);
             if (card == null) {
                 continue;
             }
 
-            possiblePoints += card.getPoints(); // Unit 3: Final method call
+            possiblePoints += card.getPoints();
 
             System.out.println();
-            // Unit 3: Polymorphic method call - invokes specific subclass display()
             card.display();
 
             System.out.print("Your Answer: ");
             String answer = scanner.nextLine();
 
-            // Unit 3: Polymorphic method call - invokes specific subclass checkAnswer()
             boolean correct = card.checkAnswer(answer);
             if (correct) {
                 System.out.println(">> Correct! (+" + card.getPoints() + " points)");
@@ -75,9 +71,39 @@ public class Quiz {
         this.totalPointsEarned = pointsEarned;
         this.totalPossiblePoints = possiblePoints;
         this.totalQuestions = deck.getCardCount();
-        this.percentage = (possiblePoints > 0) ? ((double) pointsEarned / (double) possiblePoints) * 100.0 : 0.0;
+        // Unit 4: Using implemented interface method
+        this.percentage = calculatePercentage(pointsEarned, possiblePoints);
 
         printResults();
+    }
+
+    // Unit 4: Implementing Scorable.calculatePercentage
+    @Override
+    public double calculatePercentage(int pointsEarned, int totalPossible) {
+        if (totalPossible <= 0) {
+            return 0.0;
+        }
+        return ((double) pointsEarned / (double) totalPossible) * 100.0;
+    }
+
+    // Unit 4: Implementing Scorable.evaluateGrade using interface constants
+    @Override
+    public String evaluateGrade(double pct) {
+        if (pct >= Scorable.DISTINCTION_THRESHOLD) {
+            return "Grade A (Distinction)";
+        } else if (pct >= 70.0) {
+            return "Grade B (Good)";
+        } else if (pct >= Scorable.PASSING_THRESHOLD) {
+            return "Grade C (Pass)";
+        } else {
+            return "Grade F (Fail / Needs Practice)";
+        }
+    }
+
+    // Unit 4: Implementing Scorable.isPassing using interface constants
+    @Override
+    public boolean isPassing(double pct) {
+        return pct >= Scorable.PASSING_THRESHOLD;
     }
 
     private void printResults() {
@@ -86,8 +112,9 @@ public class Quiz {
         System.out.println("Questions    : " + score + " / " + totalQuestions + " correct");
         System.out.println("Points       : " + totalPointsEarned + " / " + totalPossiblePoints + " pts");
         System.out.printf("Percentage   : %.2f%%\n", percentage);
+        System.out.println("Evaluation   : " + evaluateGrade(percentage));
+        System.out.println("Passed       : " + (isPassing(percentage) ? "YES" : "NO"));
         System.out.println("Time Taken   : " + durationSeconds + " second(s)");
-        System.out.println("Rating       : " + (percentage >= 80.0 ? "Mastered" : (percentage >= 50.0 ? "Competent" : "Needs Practice")));
         System.out.println("=====================================");
     }
 

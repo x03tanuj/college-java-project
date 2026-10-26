@@ -1,0 +1,18 @@
+# Flashcard Deck: Exceptions & File I/O (Unit 4, 6 & 7)
+# Format:
+# TEXT|question|answer|topic|points
+# MCQ|question|correctOptionLetter|optionsSeparatedBySemicolon|topic|points
+# TF|question|true/false|topic|points
+
+TEXT|Which block in exception handling is always guaranteed to execute?|finally|Exceptions|10
+TEXT|Which keyword is used in a method signature to declare that it may pass exceptions to its caller?|throws|Exceptions|10
+TEXT|Which unchecked exception class is the superclass of NullPointerException and ArithmeticException?|RuntimeException|Exceptions|10
+TEXT|Which class is used in java.io to represent file and directory pathnames?|File|File I/O|10
+MCQ|Which class provides efficient buffered reading of text lines using readLine()?|B|FileReader;BufferedReader;FileInputStream;Scanner|File Streams|15
+MCQ|What interface must a class implement to define a formal behavioral contract with abstract methods?|A|interface;abstract class;package;final class|Interfaces|15
+MCQ|Which exception type must either be caught with try/catch or declared with throws?|C|Unchecked exception;Error;Checked exception;RuntimeException|Exceptions|15
+MCQ|Which constructor parameter enables appending in FileWriter?|B|FileWriter(file, "append");FileWriter(file, true);FileWriter(file, 1);FileWriter.append(file)|File Streams|15
+TF|A single try block can have multiple catch blocks associated with it.|true|Exceptions|10
+TF|FileReader reads raw binary bytes, while FileInputStream reads 16-bit characters.|false|File Streams|10
+TF|Interfaces can declare constants that are implicitly public static final.|true|Interfaces|10
+TF|The close() method on streams should be called to release system resources.|true|File Streams|10

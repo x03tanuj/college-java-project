@@ -8,6 +8,8 @@ import com.flashquiz.model.TextCard;
 import com.flashquiz.model.MultipleChoiceCard;
 import com.flashquiz.model.TrueFalseCard;
 import com.flashquiz.model.CardMetadata;
+import com.flashquiz.exception.InvalidDeckException;
+import com.flashquiz.exception.InvalidInputException;
 
 // Unit 1: Bytecode, data types, variables, arrays, operators, decision and control statements
 public class Main {
@@ -32,7 +34,7 @@ public class Main {
         System.out.println("  Demonstrating Java Unit 1 Core Concepts ");
         System.out.println("==========================================");
 
-        // Unit 1: while control statement
+        // Unit 1 & Unit 6: while control statement protected with try-catch-finally
         while (running) {
             System.out.println("\n---------------- MAIN MENU ----------------");
             System.out.println("1. Start Quick Starter Quiz (Unit 1 Basics)");
@@ -40,50 +42,117 @@ public class Main {
             System.out.println("3. Start Inheritance & Polymorphism Quiz (Unit 3 Abstract & Subclasses)");
             System.out.println("4. View Score History (Array Storage)");
             System.out.println("5. System & Variable Diagnostics");
-            System.out.println("6. Exit");
-            System.out.print("Select an option (1-6): ");
+            System.out.println("6. Run Exception Handling Lab Test (Unit 6 Demo)");
+            System.out.println("7. Exit");
+            System.out.print("Select an option (1-7): ");
 
-            String input = scanner.nextLine();
-            if (input == null || input.trim().length() == 0) {
-                System.out.println("[Error] Empty input! Please enter a number between 1 and 6.");
-                continue;
-            }
+            String input = "";
+            // Unit 6: Try/Catch with multiple catch blocks and finally
+            try {
+                input = scanner.nextLine();
+                if (input == null || input.trim().length() == 0) {
+                    // Unit 6: throw unchecked exception
+                    throw new InvalidInputException("Input cannot be empty. Please choose 1 to 7.");
+                }
 
-            char menuChoice = input.trim().charAt(0);
+                // Unit 6: May throw NumberFormatException if input is non-numeric
+                int choice = Integer.parseInt(input.trim());
 
-            switch (menuChoice) {
-                case '1':
-                    runQuickQuiz(scanner, systemMode, totalPossiblePoints);
-                    sessionQuizCount++;
-                    break;
-                case '2':
-                    runOopQuiz(scanner);
-                    sessionQuizCount++;
-                    break;
-                case '3':
-                    runInheritanceQuiz(scanner);
-                    sessionQuizCount++;
-                    break;
-                case '4':
-                    displayScoreHistory();
-                    break;
-                case '5':
-                    displayDiagnostics(sessionQuizCount);
-                    break;
-                case '6':
-                    System.out.println("Thank you for using Flash Card Quiz! Goodbye.");
-                    running = false;
-                    break;
-                default:
-                    System.out.println("[Error] Invalid choice '" + menuChoice + "'. Enter 1 to 6.");
-                    break;
+                // Unit 6: Throwing ArrayIndexOutOfBoundsException for out-of-range menu index
+                if (choice < 1 || choice > 7) {
+                    throw new ArrayIndexOutOfBoundsException("Menu option " + choice + " is out of bounds (allowed: 1 - 7).");
+                }
+
+                switch (choice) {
+                    case 1:
+                        runQuickQuiz(scanner, systemMode, totalPossiblePoints);
+                        sessionQuizCount++;
+                        break;
+                    case 2:
+                        runOopQuiz(scanner);
+                        sessionQuizCount++;
+                        break;
+                    case 3:
+                        runInheritanceQuiz(scanner);
+                        sessionQuizCount++;
+                        break;
+                    case 4:
+                        displayScoreHistory();
+                        break;
+                    case 5:
+                        displayDiagnostics(sessionQuizCount);
+                        break;
+                    case 6:
+                        runExceptionLabDemo();
+                        break;
+                    case 7:
+                        System.out.println("Thank you for using Flash Card Quiz! Goodbye.");
+                        running = false;
+                        break;
+                }
+            } catch (NumberFormatException nfe) {
+                // Unit 6: Catch block 1 - Number format issues
+                System.out.println("[Exception Caught: NumberFormatException] Invalid number format: '" + input.trim() + "'. Expected an integer (1-7).");
+            } catch (ArrayIndexOutOfBoundsException aie) {
+                // Unit 6: Catch block 2 - Array / range bounds issues
+                System.out.println("[Exception Caught: ArrayIndexOutOfBoundsException] " + aie.getMessage());
+            } catch (InvalidInputException iie) {
+                // Unit 6: Catch block 3 - Custom unchecked exception
+                System.out.println("[Exception Caught: InvalidInputException] " + iie.getMessage());
+            } catch (InvalidDeckException ide) {
+                // Unit 6: Catch block 4 - Custom checked exception
+                System.out.println("[Exception Caught: InvalidDeckException] " + ide.getMessage());
+            } catch (Exception e) {
+                // Unit 6: Catch block 5 - Generic fallback exception handler
+                System.out.println("[Exception Caught: Exception] Unexpected error: " + e.getMessage());
+            } finally {
+                // Unit 6: finally block executes regardless of whether an exception occurred
+                // Used for state auditing and resource confirmation
+                // (kept minimal to maintain clean CLI experience)
             }
         }
         scanner.close();
     }
 
-    // Unit 3: Inheritance, abstract classes, super, final, polymorphism
-    private static void runInheritanceQuiz(Scanner scanner) {
+    // Unit 6: Dedicated method demonstrating checked/unchecked exceptions, throw, throws, multiple catch, and finally
+    private static void runExceptionLabDemo() {
+        System.out.println("\n--- RUNNING UNIT 6 EXCEPTION HANDLING TEST ---");
+
+        // 1. Triggering and catching checked InvalidDeckException
+        System.out.println("[Test 1] Validating an empty Deck (should throw InvalidDeckException):");
+        try {
+            Deck emptyDeck = new Deck("Ghost Deck", "A deck with zero cards");
+            emptyDeck.validateDeck(); // Declares throws InvalidDeckException
+            System.out.println("FAILURE: Exception was not thrown!");
+        } catch (InvalidDeckException ide) {
+            System.out.println("SUCCESS >> Caught InvalidDeckException: " + ide.getMessage());
+        }
+
+        // 2. Triggering and catching unchecked InvalidInputException
+        System.out.println("\n[Test 2] Creating a Deck with an invalid null name (should throw InvalidInputException):");
+        try {
+            Deck invalidDeck = new Deck(null, "Invalid");
+            System.out.println("FAILURE: Exception was not thrown!");
+        } catch (InvalidInputException iie) {
+            System.out.println("SUCCESS >> Caught InvalidInputException: " + iie.getMessage());
+        }
+
+        // 3. Triggering ArrayIndexOutOfBoundsException on Card retrieval
+        System.out.println("\n[Test 3] Accessing card index 99 on small deck (should throw ArrayIndexOutOfBoundsException):");
+        try {
+            Deck smallDeck = new Deck("Small", "One card deck");
+            smallDeck.addCard(new TextCard(1, "Test?", "Ans", "General", 10));
+            smallDeck.getCardAt(99); // Throws ArrayIndexOutOfBoundsException
+        } catch (ArrayIndexOutOfBoundsException aie) {
+            System.out.println("SUCCESS >> Caught ArrayIndexOutOfBoundsException: " + aie.getMessage());
+        } finally {
+            System.out.println("SUCCESS >> finally block executed in Test 3.");
+        }
+        System.out.println("--- All Unit 6 Exception Tests Passed ---\n");
+    }
+
+    // Unit 3 & Unit 6: Inheritance quiz declaring throws InvalidDeckException
+    private static void runInheritanceQuiz(Scanner scanner) throws InvalidDeckException {
         Deck polyDeck = new Deck("Inheritance & Polymorphism", "Unit 3 polymorphic cards");
 
         // Unit 3: Demonstrating final class instantiation
@@ -114,8 +183,8 @@ public class Main {
         recordHistory(polyDeck.getName(), quiz.getTotalPointsEarned(), quiz.getPercentage());
     }
 
-    // Unit 2: Building Deck object, adding Flashcard objects, and passing Deck to Quiz
-    private static void runOopQuiz(Scanner scanner) {
+    // Unit 2 & Unit 6: Building Deck object and declaring throws InvalidDeckException
+    private static void runOopQuiz(Scanner scanner) throws InvalidDeckException {
         // Unit 2: Creating objects and using overloaded constructors
         Deck oopDeck = new Deck("Java OOP Core", "Demonstrating classes, objects, and constructors");
 

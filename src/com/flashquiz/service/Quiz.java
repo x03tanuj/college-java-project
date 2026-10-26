@@ -4,8 +4,10 @@ import java.util.Scanner;
 import com.flashquiz.model.Card;
 import com.flashquiz.model.Deck;
 import com.flashquiz.util.StringUtil;
+import com.flashquiz.exception.InvalidDeckException;
+import com.flashquiz.exception.InvalidInputException;
 
-// Unit 4 & Unit 5: Scorable interface implementation with StringBuffer reporting and String hint interactions
+// Unit 4, 5, 6: Quiz demonstrating try/catch, throw, throws, finally, and custom exceptions
 public class Quiz implements Scorable {
 
     private Deck deck;
@@ -18,8 +20,12 @@ public class Quiz implements Scorable {
     private int hintsRequested;
 
     public Quiz(Deck deck) {
+        if (deck == null) {
+            // Unit 6: throw unchecked exception
+            throw new InvalidInputException("Quiz constructor requires a non-null Deck object.");
+        }
         this.deck = deck;
-        this.totalQuestions = (deck != null) ? deck.getCardCount() : 0;
+        this.totalQuestions = deck.getCardCount();
         this.score = 0;
         this.totalPointsEarned = 0;
         this.totalPossiblePoints = 0;
@@ -28,13 +34,11 @@ public class Quiz implements Scorable {
         this.hintsRequested = 0;
     }
 
-    public void runQuiz(Scanner scanner) {
-        if (deck == null || deck.getCardCount() == 0) {
-            System.out.println("[Error] Cannot start quiz: The deck is empty or not loaded.");
-            return;
-        }
+    // Unit 6: Method declaring checked exception using 'throws'
+    public void runQuiz(Scanner scanner) throws InvalidDeckException {
+        // Unit 6: Validating deck state; may throw checked InvalidDeckException
+        deck.validateDeck();
 
-        // Unit 5: StringBuffer decorated banner via StringUtil
         System.out.println(StringUtil.formatBannerWithDecoration("STARTING QUIZ: " + deck.getName()));
         System.out.println("Total Cards in Deck: " + deck.getCardCount());
         System.out.println("Tip: Enter ':hint' at any prompt to reveal letter hints!");
@@ -44,46 +48,56 @@ public class Quiz implements Scorable {
         int possiblePoints = 0;
         long startTime = System.currentTimeMillis();
 
-        for (int i = 0; i < deck.getCardCount(); i++) {
-            Card card = deck.getCardAt(i);
-            if (card == null) {
-                continue;
-            }
+        // Unit 6: try-finally block to ensure duration calculation even if interrupted
+        try {
+            for (int i = 0; i < deck.getCardCount(); i++) {
+                Card card = deck.getCardAt(i);
+                if (card == null) {
+                    continue;
+                }
 
-            possiblePoints += card.getPoints();
+                possiblePoints += card.getPoints();
 
-            System.out.println();
-            card.display();
+                System.out.println();
+                card.display();
 
-            String answer = "";
-            boolean answered = false;
+                String answer = "";
+                boolean answered = false;
 
-            // Unit 5: Hint feature loop using String.equalsIgnoreCase and char extraction
-            while (!answered) {
-                System.out.print("Your Answer (or ':hint'): ");
-                answer = scanner.nextLine();
+                while (!answered) {
+                    System.out.print("Your Answer (or ':hint'): ");
+                    try {
+                        answer = scanner.nextLine();
+                        if (answer == null) {
+                            throw new InvalidInputException("Input stream was closed or returned null.");
+                        }
 
-                if (answer != null && (answer.trim().equalsIgnoreCase(":hint") || answer.trim().equalsIgnoreCase("hint"))) {
-                    // Reveal hint extracted via character extraction
-                    System.out.println(">> " + card.getHint());
-                    hintsRequested++;
+                        if (answer.trim().equalsIgnoreCase(":hint") || answer.trim().equalsIgnoreCase("hint")) {
+                            System.out.println(">> " + card.getHint());
+                            hintsRequested++;
+                        } else {
+                            answered = true;
+                        }
+                    } catch (InvalidInputException e) {
+                        System.out.println("[Warning] " + e.getMessage() + ". Please re-enter answer.");
+                    }
+                }
+
+                boolean correct = card.checkAnswer(answer);
+                if (correct) {
+                    System.out.println(">> Correct! (+" + card.getPoints() + " points)");
+                    correctCount++;
+                    pointsEarned += card.getPoints();
                 } else {
-                    answered = true;
+                    System.out.println(">> Incorrect! Correct Answer: " + card.getAnswer());
                 }
             }
-
-            boolean correct = card.checkAnswer(answer);
-            if (correct) {
-                System.out.println(">> Correct! (+" + card.getPoints() + " points)");
-                correctCount++;
-                pointsEarned += card.getPoints();
-            } else {
-                System.out.println(">> Incorrect! Correct Answer: " + card.getAnswer());
-            }
+        } finally {
+            // Unit 6: finally block guarantees execution
+            long endTime = System.currentTimeMillis();
+            this.durationSeconds = (endTime - startTime) / 1000;
         }
 
-        long endTime = System.currentTimeMillis();
-        this.durationSeconds = (endTime - startTime) / 1000;
         this.score = correctCount;
         this.totalPointsEarned = pointsEarned;
         this.totalPossiblePoints = possiblePoints;
@@ -119,11 +133,8 @@ public class Quiz implements Scorable {
         return pct >= Scorable.PASSING_THRESHOLD;
     }
 
-    // Unit 5: Building comprehensive result report using StringBuffer (append, insert, reverse)
     private void printResults() {
-        StringBuffer report = new StringBuffer(); // Unit 5: StringBuffer constructor
-
-        // Unit 5: StringBuffer append()
+        StringBuffer report = new StringBuffer();
         report.append("\n============================================\n");
         report.append("             QUIZ PERFORMANCE REPORT        \n");
         report.append("============================================\n");
@@ -137,20 +148,18 @@ public class Quiz implements Scorable {
         report.append("Hints Consulted    : ").append(hintsRequested).append("\n");
         report.append("Completion Time    : ").append(durationSeconds).append(" second(s)\n");
 
-        // Unit 5: StringBuffer reverse() to generate symmetrical decorative divider
         StringBuffer borderDecor = new StringBuffer("~~~***>>> FlashQuiz Lab <<<***~~~");
         String normalBorder = borderDecor.toString();
-        String reversedBorder = borderDecor.reverse().toString(); // Unit 5: reverse()
+        String reversedBorder = borderDecor.reverse().toString();
         report.append("--------------------------------------------\n");
         report.append("Header Style: ").append(normalBorder).append("\n");
         report.append("Mirror Style: ").append(reversedBorder).append("\n");
         report.append("============================================\n");
 
-        // Unit 5: StringBuffer insert() - insert performance badge at top of report body
         String badge = "[STATUS: " + (isPassing(percentage) ? "QUALIFIED" : "RETAKE") + "] ";
         int insertPosition = report.indexOf("Deck Name");
         if (insertPosition != -1) {
-            report.insert(insertPosition, badge); // Unit 5: insert()
+            report.insert(insertPosition, badge);
         }
 
         System.out.println(report.toString());

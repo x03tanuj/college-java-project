@@ -2,38 +2,35 @@ package com.flashquiz.model;
 
 import java.util.Random;
 
-// Unit 2: Classes, objects, constructors, passing and returning objects, arrays of objects
+// Unit 3: Polymorphism - Deck manages polymorphic Card references (Card[])
 public class Deck {
 
     private static final int DEFAULT_CAPACITY = 20;
 
     private String name;
     private String description;
-    // Unit 2: Array of objects
-    private Flashcard[] cards;
+    // Unit 3: Polymorphic array storing any subclass of Card
+    private Card[] cards;
     private int cardCount;
     private Random random;
 
-    // Unit 2: Default constructor
     public Deck() {
         this("Unnamed Deck", "Default flashcard deck");
     }
 
-    // Unit 2: Parameterized constructor
     public Deck(String name, String description) {
         this.name = name;
         this.description = description;
-        this.cards = new Flashcard[DEFAULT_CAPACITY];
+        this.cards = new Card[DEFAULT_CAPACITY];
         this.cardCount = 0;
         this.random = new Random();
     }
 
-    // Unit 2: Passing an object as a method parameter
-    public boolean addCard(Flashcard card) {
+    // Unit 3: Polymorphic method argument - accepts TextCard, MultipleChoiceCard, TrueFalseCard
+    public boolean addCard(Card card) {
         if (card == null) {
             return false;
         }
-        // Expand array capacity if full (plain array manipulation)
         if (cardCount >= cards.length) {
             resizeArray();
         }
@@ -42,8 +39,7 @@ public class Deck {
         return true;
     }
 
-    // Unit 2: Passing an object as a parameter to check membership
-    public boolean containsCard(Flashcard targetCard) {
+    public boolean containsCard(Card targetCard) {
         if (targetCard == null) {
             return false;
         }
@@ -55,16 +51,16 @@ public class Deck {
         return false;
     }
 
-    // Unit 2: Returning an object from a method by index
-    public Flashcard getCardAt(int index) {
+    // Unit 3: Returning polymorphic base class object Card
+    public Card getCardAt(int index) {
         if (index < 0 || index >= cardCount) {
             return null;
         }
         return cards[index];
     }
 
-    // Unit 2: Returning an object from a method (random card selection)
-    public Flashcard getRandomCard() {
+    // Unit 3: Returning polymorphic base class object Card
+    public Card getRandomCard() {
         if (cardCount == 0) {
             return null;
         }
@@ -72,9 +68,8 @@ public class Deck {
         return cards[randomIndex];
     }
 
-    // Plain array resizing to maintain array demonstration
     private void resizeArray() {
-        Flashcard[] expanded = new Flashcard[cards.length * 2];
+        Card[] expanded = new Card[cards.length * 2];
         for (int i = 0; i < cards.length; i++) {
             expanded[i] = cards[i];
         }
@@ -101,7 +96,6 @@ public class Deck {
         this.description = description;
     }
 
-    // Unit 2: Printing summary of object state
     public void printDeckSummary() {
         System.out.println("Deck: " + name + " (" + cardCount + " cards) - " + description);
     }

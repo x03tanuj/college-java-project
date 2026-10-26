@@ -1,8 +1,13 @@
 package com.flashquiz;
 
 import java.util.Scanner;
+import com.flashquiz.model.Card;
 import com.flashquiz.model.Deck;
 import com.flashquiz.model.Flashcard;
+import com.flashquiz.model.TextCard;
+import com.flashquiz.model.MultipleChoiceCard;
+import com.flashquiz.model.TrueFalseCard;
+import com.flashquiz.model.CardMetadata;
 
 // Unit 1: Bytecode, data types, variables, arrays, operators, decision and control statements
 public class Main {
@@ -32,14 +37,15 @@ public class Main {
             System.out.println("\n---------------- MAIN MENU ----------------");
             System.out.println("1. Start Quick Starter Quiz (Unit 1 Basics)");
             System.out.println("2. Start OOP Flashcard Quiz (Unit 2 Objects & Decks)");
-            System.out.println("3. View Score History (Array Storage)");
-            System.out.println("4. System & Variable Diagnostics");
-            System.out.println("5. Exit");
-            System.out.print("Select an option (1-5): ");
+            System.out.println("3. Start Inheritance & Polymorphism Quiz (Unit 3 Abstract & Subclasses)");
+            System.out.println("4. View Score History (Array Storage)");
+            System.out.println("5. System & Variable Diagnostics");
+            System.out.println("6. Exit");
+            System.out.print("Select an option (1-6): ");
 
             String input = scanner.nextLine();
             if (input == null || input.trim().length() == 0) {
-                System.out.println("[Error] Empty input! Please enter a number between 1 and 5.");
+                System.out.println("[Error] Empty input! Please enter a number between 1 and 6.");
                 continue;
             }
 
@@ -55,21 +61,57 @@ public class Main {
                     sessionQuizCount++;
                     break;
                 case '3':
-                    displayScoreHistory();
+                    runInheritanceQuiz(scanner);
+                    sessionQuizCount++;
                     break;
                 case '4':
-                    displayDiagnostics(sessionQuizCount);
+                    displayScoreHistory();
                     break;
                 case '5':
+                    displayDiagnostics(sessionQuizCount);
+                    break;
+                case '6':
                     System.out.println("Thank you for using Flash Card Quiz! Goodbye.");
                     running = false;
                     break;
                 default:
-                    System.out.println("[Error] Invalid choice '" + menuChoice + "'. Enter 1 to 5.");
+                    System.out.println("[Error] Invalid choice '" + menuChoice + "'. Enter 1 to 6.");
                     break;
             }
         }
         scanner.close();
+    }
+
+    // Unit 3: Inheritance, abstract classes, super, final, polymorphism
+    private static void runInheritanceQuiz(Scanner scanner) {
+        Deck polyDeck = new Deck("Inheritance & Polymorphism", "Unit 3 polymorphic cards");
+
+        // Unit 3: Demonstrating final class instantiation
+        CardMetadata meta = new CardMetadata("FlashCard Lab Team", "1.0.0");
+        System.out.println("[Metadata] " + meta.toString());
+
+        // Unit 3: Concrete subclasses extending abstract Card
+        Card textCard = new TextCard(101, "Which keyword prevents method overriding in Java?", "final", "Inheritance", 15);
+        
+        String[] mcqOptions = new String[]{"Multiple inheritance of classes", "Multiple constructors", "Method overloading", "Abstract methods"};
+        Card mcqCard = new MultipleChoiceCard(102, "Which feature is NOT supported directly in Java?", mcqOptions, 'A', "Inheritance", 20);
+
+        Card tfCard = new TrueFalseCard(103, "Can an abstract class declare concrete constructors?", true, "Inheritance", 15);
+
+        // Unit 3: Overloaded method demonstration
+        System.out.println("\n[Diagnostic: Testing Method Overloading on MCQ Card]");
+        System.out.println("Testing checkAnswer(String \"A\"): " + mcqCard.checkAnswer("A"));
+        System.out.println("Testing checkAnswer(char 'A')  : " + mcqCard.checkAnswer('A'));
+
+        // Unit 3: Polymorphism - adding diverse Card subtypes to Deck
+        polyDeck.addCard(textCard);
+        polyDeck.addCard(mcqCard);
+        polyDeck.addCard(tfCard);
+
+        com.flashquiz.service.Quiz quiz = new com.flashquiz.service.Quiz(polyDeck);
+        quiz.runQuiz(scanner);
+
+        recordHistory(polyDeck.getName(), quiz.getTotalPointsEarned(), quiz.getPercentage());
     }
 
     // Unit 2: Building Deck object, adding Flashcard objects, and passing Deck to Quiz

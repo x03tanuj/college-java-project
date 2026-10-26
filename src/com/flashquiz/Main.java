@@ -2,6 +2,8 @@ package com.flashquiz;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.Scanner;
 
 import com.flashquiz.model.Card;
@@ -28,7 +30,7 @@ public class Main {
     private static int historyCount = 0;
 
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         // Unit 1: primitive types (boolean, byte, short, int, long, float, double, char)
         boolean running = true;
         byte systemMode = 1; // 1 = Standard CLI Mode (demonstrating byte)
@@ -47,69 +49,76 @@ public class Main {
             System.out.println("2.  Start OOP Flashcard Quiz (Unit 2 Objects & Decks)");
             System.out.println("3.  Start Inheritance & Polymorphism Quiz (Unit 3 Abstract & Subclasses)");
             System.out.println("4.  Load & Play Deck from File (Unit 7 File Handling)");
-            System.out.println("5.  Add New Card to Deck File (Unit 7 File Appending)");
-            System.out.println("6.  View Persistent Score History (Unit 7 scores.txt)");
-            System.out.println("7.  View In-Memory Score History (Unit 1 Arrays)");
-            System.out.println("8.  System & Variable Diagnostics");
-            System.out.println("9.  Run Exception Handling Lab Test (Unit 6 Demo)");
-            System.out.println("10. Exit");
-            System.out.print("Select an option (1-10): ");
+            System.out.println("5.  Start Timed Quiz Challenge (Unit 8 Multithreading Countdown)");
+            System.out.println("6.  Add New Card to Deck File (Unit 7 File Appending)");
+            System.out.println("7.  View Persistent Score History (Unit 7 scores.txt)");
+            System.out.println("8.  View In-Memory Score History (Unit 1 Arrays)");
+            System.out.println("9.  System & Variable Diagnostics (Unit 1 Primitives & Ops)");
+            System.out.println("10. Run Exception Handling Lab Test (Unit 6 Demo)");
+            System.out.println("11. Exit");
+            System.out.print("Select an option (1-11): ");
 
             String input = "";
-            // Unit 6: Try/Catch with multiple catch blocks and finally
             try {
-                input = scanner.nextLine();
-                if (input == null || input.trim().length() == 0) {
-                    throw new InvalidInputException("Input cannot be empty. Please choose 1 to 10.");
+                input = reader.readLine();
+                if (input == null) {
+                    System.out.println("\n[EOF Detected] Exiting Flash Card Quiz.");
+                    running = false;
+                    break;
+                }
+                if (input.trim().length() == 0) {
+                    throw new InvalidInputException("Input cannot be empty. Please choose 1 to 11.");
                 }
 
-                // Unit 6: NumberFormatException catch demonstration
                 int choice = Integer.parseInt(input.trim());
 
-                // Unit 6: ArrayIndexOutOfBoundsException catch demonstration
-                if (choice < 1 || choice > 10) {
-                    throw new ArrayIndexOutOfBoundsException("Menu option " + choice + " is out of bounds (allowed: 1 - 10).");
+                if (choice < 1 || choice > 11) {
+                    throw new ArrayIndexOutOfBoundsException("Menu option " + choice + " is out of bounds (allowed: 1 - 11).");
                 }
 
                 switch (choice) {
                     case 1:
-                        runQuickQuiz(scanner, systemMode, totalPossiblePoints);
+                        runQuickQuiz(reader, systemMode, totalPossiblePoints);
                         sessionQuizCount++;
                         break;
                     case 2:
-                        runOopQuiz(scanner);
+                        runOopQuiz(reader);
                         sessionQuizCount++;
                         break;
                     case 3:
-                        runInheritanceQuiz(scanner);
+                        runInheritanceQuiz(reader);
                         sessionQuizCount++;
                         break;
                     case 4:
-                        runFileDeckQuiz(scanner);
+                        runFileDeckQuiz(reader, 0); // Untimed file quiz
                         sessionQuizCount++;
                         break;
                     case 5:
-                        addNewCardToDeck(scanner);
+                        runTimedQuizChallenge(reader);
+                        sessionQuizCount++;
                         break;
                     case 6:
-                        ScoreManager.displayFileScores();
+                        addNewCardToDeck(reader);
                         break;
                     case 7:
-                        displayScoreHistory();
+                        ScoreManager.displayFileScores();
                         break;
                     case 8:
-                        displayDiagnostics(sessionQuizCount);
+                        displayScoreHistory();
                         break;
                     case 9:
-                        runExceptionLabDemo();
+                        displayDiagnostics(sessionQuizCount);
                         break;
                     case 10:
+                        runExceptionLabDemo();
+                        break;
+                    case 11:
                         System.out.println("Thank you for using Flash Card Quiz! Goodbye.");
                         running = false;
                         break;
                 }
             } catch (NumberFormatException nfe) {
-                System.out.println("[Exception Caught: NumberFormatException] Invalid number format: '" + input.trim() + "'. Expected an integer (1-10).");
+                System.out.println("[Exception Caught: NumberFormatException] Invalid number format: '" + input.trim() + "'. Expected an integer (1-11).");
             } catch (ArrayIndexOutOfBoundsException aie) {
                 System.out.println("[Exception Caught: ArrayIndexOutOfBoundsException] " + aie.getMessage());
             } catch (InvalidInputException iie) {
@@ -120,16 +129,29 @@ public class Main {
                 System.out.println("[Exception Caught: IOException] File I/O Error: " + ioe.getMessage());
             } catch (Exception e) {
                 System.out.println("[Exception Caught: Exception] Unexpected error: " + e.getMessage());
-            } finally {
-                // Unit 6: finally block executes every interaction cycle
             }
         }
-        scanner.close();
     }
 
-    // Unit 7: Loading and playing a Deck from data/*.txt file using DeckFileReader
-    private static void runFileDeckQuiz(Scanner scanner) throws InvalidDeckException, IOException {
-        System.out.println("\n--- LOAD DECK FROM FILE ---");
+    // Unit 8: Dedicated Multithreaded Quiz with user-specified countdown timer
+    private static void runTimedQuizChallenge(BufferedReader reader) throws InvalidDeckException, IOException {
+        System.out.println("\n--- TIMED QUIZ CHALLENGE (Unit 8 Multithreading) ---");
+        System.out.print("Enter countdown seconds per question (e.g. 5, 10, 15): ");
+        String timeStr = reader.readLine();
+        int seconds = 10;
+        try {
+            seconds = Integer.parseInt(timeStr.trim());
+        } catch (Exception e) {
+            System.out.println("[Note] Defaulting to 10 seconds per question.");
+            seconds = 10;
+        }
+
+        runFileDeckQuiz(reader, seconds);
+    }
+
+    // Unit 7 & Unit 8: Loading Deck from file and executing with optional countdown timer
+    private static void runFileDeckQuiz(BufferedReader reader, int perQuestionSeconds) throws InvalidDeckException, IOException {
+        System.out.println("\n--- SELECT DECK FILE ---");
         File[] deckFiles = DeckFileReader.listAvailableDeckFiles(DATA_DIRECTORY);
 
         if (deckFiles.length == 0) {
@@ -142,7 +164,7 @@ public class Main {
             System.out.println("  [" + (i + 1) + "] " + deckFiles[i].getName() + " (" + deckFiles[i].length() + " bytes)");
         }
         System.out.print("Select deck number (1-" + deckFiles.length + "): ");
-        String selInput = scanner.nextLine();
+        String selInput = reader.readLine();
 
         int selectedIndex;
         try {
@@ -158,12 +180,12 @@ public class Main {
         File selectedFile = deckFiles[selectedIndex];
         System.out.println("[File I/O] Reading " + selectedFile.getName() + " using BufferedReader...");
 
-        // Unit 7: Reading deck file line by line
         Deck loadedDeck = DeckFileReader.loadDeckFromFile(selectedFile.getPath());
         System.out.println("[File I/O] Successfully loaded deck with " + loadedDeck.getCardCount() + " cards!");
 
-        com.flashquiz.service.Quiz quiz = new com.flashquiz.service.Quiz(loadedDeck);
-        quiz.runQuiz(scanner);
+        // Unit 8: Instantiate Quiz with per-question countdown seconds
+        com.flashquiz.service.Quiz quiz = new com.flashquiz.service.Quiz(loadedDeck, perQuestionSeconds);
+        quiz.runQuiz(reader);
 
         // Record in-memory array history (Unit 1)
         recordHistory(loadedDeck.getName(), quiz.getTotalPointsEarned(), quiz.getPercentage());
@@ -179,7 +201,7 @@ public class Main {
     }
 
     // Unit 7: Adding a new card via CLI and appending it to file using FileWriter & BufferedWriter
-    private static void addNewCardToDeck(Scanner scanner) throws IOException {
+    private static void addNewCardToDeck(BufferedReader reader) throws IOException {
         System.out.println("\n--- ADD NEW CARD TO DECK FILE ---");
         File[] deckFiles = DeckFileReader.listAvailableDeckFiles(DATA_DIRECTORY);
         if (deckFiles.length == 0) {
@@ -192,7 +214,7 @@ public class Main {
             System.out.println("  [" + (i + 1) + "] " + deckFiles[i].getName());
         }
         System.out.print("Choose deck (1-" + deckFiles.length + "): ");
-        int fileIdx = Integer.parseInt(scanner.nextLine().trim()) - 1;
+        int fileIdx = Integer.parseInt(reader.readLine().trim()) - 1;
         if (fileIdx < 0 || fileIdx >= deckFiles.length) {
             throw new ArrayIndexOutOfBoundsException("Invalid deck selection index.");
         }
@@ -203,22 +225,22 @@ public class Main {
         System.out.println("  2. Multiple Choice Card (MCQ)");
         System.out.println("  3. True / False Card");
         System.out.print("Choose type (1-3): ");
-        int typeChoice = Integer.parseInt(scanner.nextLine().trim());
+        int typeChoice = Integer.parseInt(reader.readLine().trim());
 
         System.out.print("Enter Question: ");
-        String question = scanner.nextLine().trim();
+        String question = reader.readLine().trim();
         if (question.length() == 0) {
             throw new InvalidInputException("Question text cannot be empty.");
         }
 
         System.out.print("Enter Topic (e.g. Java Basics): ");
-        String topic = scanner.nextLine().trim();
+        String topic = reader.readLine().trim();
         if (topic.length() == 0) topic = "General";
 
         System.out.print("Enter Points (e.g. 10): ");
         int points = 10;
         try {
-            points = Integer.parseInt(scanner.nextLine().trim());
+            points = Integer.parseInt(reader.readLine().trim());
         } catch (NumberFormatException e) {
             System.out.println("[Note] Defaulting to 10 points.");
         }
@@ -226,33 +248,31 @@ public class Main {
         Card newCard = null;
         if (typeChoice == 1) {
             System.out.print("Enter Expected Answer: ");
-            String ans = scanner.nextLine().trim();
+            String ans = reader.readLine().trim();
             newCard = new TextCard(999, question, ans, topic, points);
         } else if (typeChoice == 2) {
             System.out.print("Enter Option A: ");
-            String opA = scanner.nextLine().trim();
+            String opA = reader.readLine().trim();
             System.out.print("Enter Option B: ");
-            String opB = scanner.nextLine().trim();
+            String opB = reader.readLine().trim();
             System.out.print("Enter Option C: ");
-            String opC = scanner.nextLine().trim();
+            String opC = reader.readLine().trim();
             System.out.print("Enter Option D: ");
-            String opD = scanner.nextLine().trim();
+            String opD = reader.readLine().trim();
             System.out.print("Enter Correct Option Letter (A, B, C, or D): ");
-            char correct = scanner.nextLine().trim().toUpperCase().charAt(0);
+            char correct = reader.readLine().trim().toUpperCase().charAt(0);
             newCard = new MultipleChoiceCard(999, question, new String[]{opA, opB, opC, opD}, correct, topic, points);
         } else if (typeChoice == 3) {
             System.out.print("Enter Correct Answer (true or false): ");
-            boolean boolAns = Boolean.parseBoolean(scanner.nextLine().trim().toLowerCase());
+            boolean boolAns = Boolean.parseBoolean(reader.readLine().trim().toLowerCase());
             newCard = new TrueFalseCard(999, question, boolAns, topic, points);
         } else {
             throw new InvalidInputException("Invalid card type choice: " + typeChoice);
         }
 
-        // Unit 7: Appending to file
         DeckFileReader.appendCardToFile(targetFile.getPath(), newCard);
     }
 
-    // Unit 6: Dedicated method demonstrating checked/unchecked exceptions, throw, throws, multiple catch, and finally
     private static void runExceptionLabDemo() {
         System.out.println("\n--- RUNNING UNIT 6 EXCEPTION HANDLING TEST ---");
 
@@ -286,8 +306,7 @@ public class Main {
         System.out.println("--- All Unit 6 Exception Tests Passed ---\n");
     }
 
-    // Unit 3 & Unit 6: Inheritance quiz declaring throws InvalidDeckException
-    private static void runInheritanceQuiz(Scanner scanner) throws InvalidDeckException {
+    private static void runInheritanceQuiz(BufferedReader reader) throws InvalidDeckException {
         Deck polyDeck = new Deck("Inheritance & Polymorphism", "Unit 3 polymorphic cards");
 
         CardMetadata meta = new CardMetadata("FlashCard Lab Team", "1.0.0");
@@ -309,13 +328,12 @@ public class Main {
         polyDeck.addCard(tfCard);
 
         com.flashquiz.service.Quiz quiz = new com.flashquiz.service.Quiz(polyDeck);
-        quiz.runQuiz(scanner);
+        quiz.runQuiz(reader);
 
         recordHistory(polyDeck.getName(), quiz.getTotalPointsEarned(), quiz.getPercentage());
     }
 
-    // Unit 2 & Unit 6: Building Deck object and declaring throws InvalidDeckException
-    private static void runOopQuiz(Scanner scanner) throws InvalidDeckException {
+    private static void runOopQuiz(BufferedReader reader) throws InvalidDeckException {
         Deck oopDeck = new Deck("Java OOP Core", "Demonstrating classes, objects, and constructors");
 
         Flashcard c1 = new Flashcard(1, "What is the blueprint from which objects are created?", "class", "OOP");
@@ -332,7 +350,7 @@ public class Main {
         oopDeck.addCard(c3Copy);
 
         com.flashquiz.service.Quiz quiz = new com.flashquiz.service.Quiz(oopDeck);
-        quiz.runQuiz(scanner);
+        quiz.runQuiz(reader);
 
         recordHistory(oopDeck.getName(), quiz.getScore() * 10, quiz.getPercentage());
     }
@@ -355,8 +373,7 @@ public class Main {
         }
     }
 
-    // Unit 1: Method demonstrating operators, arrays, loops, and all primitives
-    private static void runQuickQuiz(Scanner scanner, byte mode, short maxPoints) {
+    private static void runQuickQuiz(BufferedReader reader, byte mode, short maxPoints) throws IOException {
         System.out.println("\n--- Starting Quick Starter Quiz ---");
         String[] questions = new String[5];
         String[] answers = new String[5];
@@ -385,7 +402,9 @@ public class Main {
         for (int i = 0; i < totalQuestions; i++) {
             System.out.println("\nCard #" + (i + 1) + ": " + questions[i]);
             System.out.print("Your Answer: ");
-            String userAns = scanner.nextLine().trim();
+            String userAns = reader.readLine();
+            if (userAns == null) userAns = "";
+            userAns = userAns.trim();
 
             boolean isMatch = userAns.equalsIgnoreCase(answers[i]);
             if (isMatch) {
